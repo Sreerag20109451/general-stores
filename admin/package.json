@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "admin",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,6 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-navigation/bottom-tabs": "^7.9.1",
     "@react-navigation/native": "^7.1.27",
     "@react-navigation/native-stack": "^7.9.1",
     "expo": "~54.0.31",
