@@ -4,6 +4,7 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // TODO: Replace with your actual Firebase project config for PRODUCTION
+// TODO: Replace with your actual Firebase project config for PRODUCTION
 const firebaseConfigProd = {
     apiKey: "PROD_API_KEY",
     authDomain: "PROD_AUTH_DOMAIN",
@@ -13,14 +14,14 @@ const firebaseConfigProd = {
     appId: "PROD_APP_ID"
 };
 
-// TODO: Replace with your actual Firebase project config for DEVELOPMENT (Local)
+// Config for DEVELOPMENT (Local) uses Env Vars
 const firebaseConfigDev = {
-    apiKey: "DEV_API_KEY",
-    authDomain: "DEV_AUTH_DOMAIN",
-    projectId: "DEV_PROJECT_ID",
-    storageBucket: "DEV_STORAGE_BUCKET",
-    messagingSenderId: "DEV_MESSAGING_SENDER_ID",
-    appId: "DEV_APP_ID"
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID
 };
 
 const firebaseConfig = __DEV__ ? firebaseConfigDev : firebaseConfigProd;
