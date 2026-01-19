@@ -98,7 +98,7 @@ export default function LoginScreen({ navigation }) {
 
             {!verificationId ? (
                 <>
-                    <Text style={styles.subtitle}>Enter your phone number to continue</Text>
+                    <Text style={[styles.subtitle, { color: theme.colors.secondary }]}>Enter your phone number to continue</Text>
                     <View style={styles.row}>
                         <TextInput
                             label="Code"
@@ -130,7 +130,7 @@ export default function LoginScreen({ navigation }) {
                 </>
             ) : (
                 <>
-                    <Text style={styles.subtitle}>Enter the 6-digit code sent to {countryCode}{phoneNumber}</Text>
+                    <Text style={[styles.subtitle, { color: theme.colors.secondary }]}>Enter the 6-digit code sent to {countryCode}{phoneNumber}</Text>
                     <View style={styles.otpContainer}>
                         {verificationCode.map((digit, index) => (
                             <TextInput
@@ -175,50 +175,47 @@ export default function LoginScreen({ navigation }) {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+container: {
+    flex: 1,
         padding: 20,
-        justifyContent: 'center',
-        backgroundColor: '#fff',
+            justifyContent: 'center',
+                backgroundColor: 'transparent', // Let parent PaperProvider background show, or user theme.colors.background
     },
-    title: {
-        textAlign: 'center',
+title: {
+    textAlign: 'center',
         marginBottom: 10,
-        fontWeight: 'bold',
+            fontWeight: 'bold',
     },
-    subtitle: {
-        textAlign: 'center',
+subtitle: {
+    textAlign: 'center',
         marginBottom: 30,
-        color: '#666',
+        // Color handled by style array or default text color usually, but here we can remove hardcode
     },
-    row: {
-        flexDirection: 'row',
+row: {
+    flexDirection: 'row',
         marginBottom: 20,
     },
-    input: {
-        backgroundColor: 'white',
+input: {
+    backgroundColor: 'white', // Inputs usually white on white bg is fine
     },
-    otpContainer: {
-        flexDirection: 'row',
+otpContainer: {
+    flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 20,
+            marginBottom: 20,
     },
-    otpInput: {
-        width: 45,
+otpInput: {
+    width: 45,
         height: 50,
-        backgroundColor: 'white',
-        textAlign: 'center',
-        justifyContent: 'center',
-        // Paper specific hacks for centering text in small inputs might be needed, 
-        // but let's try standard props first.
+            backgroundColor: 'white',
+                textAlign: 'center',
+                    justifyContent: 'center', 
     },
-    button: {
-        paddingVertical: 6,
+button: {
+    paddingVertical: 6,
         marginBottom: 10,
     },
-    link: {
-        alignItems: 'center',
+link: {
+    alignItems: 'center',
         marginTop: 10,
     }
 });

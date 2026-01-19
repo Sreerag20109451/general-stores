@@ -9,8 +9,13 @@ const theme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: '#6200ee',
-    secondary: '#03dac6',
+    primary: '#87CEEB', // SkyBlue for Buttons/Action
+    onPrimary: '#333333', // Dark text on light buttons for readability
+    secondary: '#4F4F4F', // Dark Gray for secondary elements
+    background: '#FFFFFF', // White background
+    surface: '#FFFFFF',
+    onBackground: '#333333', // Dark Gray for text
+    onSurface: '#333333',
   },
 };
 
