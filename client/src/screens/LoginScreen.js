@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Button, Text, TextInput, Snackbar } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
+import { Button, Text, Snackbar } from 'react-native-paper';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -85,82 +85,115 @@ export default function LoginScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
-            <FirebaseRecaptchaVerifierModal
-                ref={recaptchaVerifier}
-                firebaseConfig={firebaseConfig}
-                attemptInvisibleVerification={true}
-            />
+        <View className="flex-1 bg-white p-5 justify-between">
+            {/* Top Bar */}
+            <View className="flex-row items-end justify-between mt-5">
+                <Image
+                    source={require('../../assets/logo.png')}
+                    style={{ width: 120, height: 120, resizeMode: 'contain' }}
+                    className="h-20 w-20"
+                />
+                <TouchableOpacity onPress={() => navigation.replace('Home')} className="mb-8">
+                    <Text className="text-sky-500 font-semibold">Skip</Text>
+                </TouchableOpacity>
+            </View>
 
-            <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
-                {verificationId ? "Verify Phone" : "General Store Login"}
-            </Text>
+            {/* Main Content */}
+            <View className="w-full flex-col items-center mb-10">
+                <FirebaseRecaptchaVerifierModal
+                    ref={recaptchaVerifier}
+                    firebaseConfig={firebaseConfig}
+                    attemptInvisibleVerification={true}
+                />
 
-            {!verificationId ? (
-                <>
-                    <Text style={[styles.subtitle, { color: theme.colors.secondary }]}>Enter your phone number to continue</Text>
-                    <View style={styles.row}>
-                        <TextInput
-                            label="Code"
-                            value={countryCode}
-                            onChangeText={setCountryCode}
-                            style={[styles.input, { width: 90, marginRight: 10 }]}
-                            mode="outlined"
-                            keyboardType="phone-pad"
-                        />
-                        <TextInput
-                            label="Phone Number"
-                            value={phoneNumber}
-                            onChangeText={setPhoneNumber}
-                            keyboardType="phone-pad"
-                            autoComplete="tel"
-                            style={[styles.input, { flex: 1 }]}
-                            mode="outlined"
-                        />
-                    </View>
-                    <Button
-                        mode="contained"
-                        onPress={sendVerification}
-                        loading={loading}
-                        disabled={loading}
-                        style={styles.button}
-                    >
-                        Send Verification Code
-                    </Button>
-                </>
-            ) : (
-                <>
-                    <Text style={[styles.subtitle, { color: theme.colors.secondary }]}>Enter the 6-digit code sent to {countryCode}{phoneNumber}</Text>
-                    <View style={styles.otpContainer}>
-                        {verificationCode.map((digit, index) => (
+                <Text className="text-4xl font-semibold text-slate-950 text-center">
+                    {verificationId ? "Verify Phone" : "Welcome back"}
+                </Text>
+                <Text className="text-md mt-4 font-light text-slate-400 text-center mb-8">
+                    {verificationId
+                        ? `Enter the code sent to ${countryCode} ${phoneNumber}`
+                        : "Sign in or create an account to continue"
+                    }
+                </Text>
+
+                {!verificationId ? (
+                    <View className="w-full max-w-sm">
+                        <View className="flex-row mb-4">
                             <TextInput
-                                key={index}
-                                ref={(ref) => inputRefs.current[index] = ref}
-                                value={digit}
-                                onChangeText={(text) => handleCodeChange(text, index)}
-                                onKeyPress={({ nativeEvent }) => handleBackspace(nativeEvent.key, index)}
-                                keyboardType="number-pad"
-                                maxLength={1}
-                                style={styles.otpInput}
-                                mode="outlined"
-                                textAlign="center"
+                                value={countryCode}
+                                onChangeText={setCountryCode}
+                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 mr-2 w-20 text-slate-900 font-medium"
+                                keyboardType="phone-pad"
                             />
-                        ))}
+                            <TextInput
+                                placeholder="Phone Number"
+                                placeholderTextColor="#94a3b8"
+                                value={phoneNumber}
+                                onChangeText={setPhoneNumber}
+                                keyboardType="phone-pad"
+                                autoComplete="tel"
+                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 flex-1 text-slate-900 font-medium"
+                            />
+                        </View>
+                        <TouchableOpacity
+                            onPress={sendVerification}
+                            disabled={loading}
+                            className={`h-14 w-full rounded-xl items-center justify-center shadow-sm ${loading ? 'bg-sky-300' : 'bg-sky-500'}`}
+                        >
+                            <Text className="text-md font-semibold text-slate-50">
+                                {loading ? "Sending..." : "Continue"}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-                    <Button
-                        mode="contained"
-                        onPress={confirmCode}
-                        loading={loading}
-                        disabled={loading}
-                        style={styles.button}
-                    >
-                        Confirm & Login
-                    </Button>
-                    <TouchableOpacity onPress={() => setVerificationId(null)} style={styles.link}>
-                        <Text style={{ color: theme.colors.secondary }}>Change Phone Number</Text>
-                    </TouchableOpacity>
-                </>
-            )}
+                ) : (
+                    <View className="w-full max-w-sm">
+                        <View className="flex-row justify-between mb-6">
+                            {verificationCode.map((digit, index) => (
+                                <TextInput
+                                    key={index}
+                                    ref={(ref) => inputRefs.current[index] = ref}
+                                    value={digit}
+                                    onChangeText={(text) => handleCodeChange(text, index)}
+                                    onKeyPress={({ nativeEvent }) => handleBackspace(nativeEvent.key, index)}
+                                    keyboardType="number-pad"
+                                    maxLength={1}
+                                    className="w-12 h-14 bg-slate-50 border border-slate-200 rounded-xl text-center text-xl font-semibold text-slate-900"
+                                    textAlign="center"
+                                />
+                            ))}
+                        </View>
+                        <TouchableOpacity
+                            onPress={confirmCode}
+                            disabled={loading}
+                            className={`h-14 w-full rounded-xl items-center justify-center shadow-sm mb-4 ${loading ? 'bg-sky-300' : 'bg-sky-500'}`}
+                        >
+                            <Text className="text-md font-semibold text-slate-50">
+                                {loading ? "Verifying..." : "Confirm & Login"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => setVerificationId(null)} className="items-center">
+                            <Text className="text-slate-500 font-medium">Change Phone Number</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Error Snackbar via simple Text for now to match design or keep logic */}
+                {/* Keeping logic but styling it naturally if possible, or using Paper's Snackbar as before but styled? 
+                    Let's use a conditional Text for error to fit the custom design better than a floating snackbar if desired, 
+                    but sticking to the existing Snackbar component for functionality is safer. 
+                    I'll keep the Snackbar but wrapper needs to be right.
+                */}
+            </View>
+
+            {/* Footer */}
+            <View className="mb-5">
+                <Text className="text-md text-center font-light text-slate-600">
+                    By continuing, you agree to our{' '}
+                    <Text className="font-semibold text-slate-900">Terms of Services</Text> and{' '}
+                    <Text className="font-semibold text-slate-900">Privacy Policies</Text>
+                </Text>
+            </View>
 
             <Snackbar
                 visible={!!error}
@@ -168,54 +201,15 @@ export default function LoginScreen({ navigation }) {
                 action={{
                     label: 'Dismiss',
                     onPress: () => setError(''),
-                }}>
+                    textColor: 'white'
+                }}
+                className="bg-red-500 mb-20"
+            >
                 {error}
             </Snackbar>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        justifyContent: 'center',
-        backgroundColor: 'transparent',
-    },
-    title: {
-        textAlign: 'center',
-        marginBottom: 10,
-        fontWeight: 'bold',
-    },
-    subtitle: {
-        textAlign: 'center',
-        marginBottom: 30,
-    },
-    row: {
-        flexDirection: 'row',
-        marginBottom: 20,
-    },
-    input: {
-        backgroundColor: 'white',
-    },
-    otpContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-    },
-    otpInput: {
-        width: 45,
-        height: 50,
-        backgroundColor: 'white',
-        textAlign: 'center',
-        justifyContent: 'center',
-    },
-    button: {
-        paddingVertical: 6,
-        marginBottom: 10,
-    },
-    link: {
-        alignItems: 'center',
-        marginTop: 10,
-    }
-});
+// Removing StyleSheet since we use NativeWind
+const styles = {};
