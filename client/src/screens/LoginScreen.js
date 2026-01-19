@@ -10,13 +10,31 @@ export default function LoginScreen({ navigation }) {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [countryCode, setCountryCode] = useState('+353');
     const [verificationId, setVerificationId] = useState(null);
-    const [verificationCode, setVerificationCode] = useState('');
+    const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const recaptchaVerifier = useRef(null);
+    const inputRefs = useRef([]);
     const theme = useTheme();
 
     const firebaseConfig = auth.app.options;
+
+    const handleCodeChange = (text, index) => {
+        const newCode = [...verificationCode];
+        newCode[index] = text;
+        setVerificationCode(newCode);
+
+        // Move to next input if text is entered
+        if (text && index < 5) {
+            inputRefs.current[index + 1].focus();
+        }
+    };
+
+    const handleBackspace = (key, index) => {
+        if (key === 'Backspace' && !verificationCode[index] && index > 0) {
+            inputRefs.current[index - 1].focus();
+        }
+    };
 
     const sendVerification = async () => {
         if (!phoneNumber) {
@@ -44,8 +62,9 @@ export default function LoginScreen({ navigation }) {
     };
 
     const confirmCode = async () => {
-        if (!verificationCode) {
-            setError("Please enter the verification code.");
+        const codeString = verificationCode.join('');
+        if (codeString.length !== 6) {
+            setError("Please enter the complete 6-digit code.");
             return;
         }
         setLoading(true);
@@ -53,7 +72,7 @@ export default function LoginScreen({ navigation }) {
         try {
             const credential = PhoneAuthProvider.credential(
                 verificationId,
-                verificationCode
+                codeString
             );
             await signInWithCredential(auth, credential);
             navigation.replace('Home');
@@ -112,14 +131,22 @@ export default function LoginScreen({ navigation }) {
             ) : (
                 <>
                     <Text style={styles.subtitle}>Enter the 6-digit code sent to {countryCode}{phoneNumber}</Text>
-                    <TextInput
-                        label="Verification Code"
-                        value={verificationCode}
-                        onChangeText={setVerificationCode}
-                        keyboardType="number-pad"
-                        style={styles.input}
-                        mode="outlined"
-                    />
+                    <View style={styles.otpContainer}>
+                        {verificationCode.map((digit, index) => (
+                            <TextInput
+                                key={index}
+                                ref={(ref) => inputRefs.current[index] = ref}
+                                value={digit}
+                                onChangeText={(text) => handleCodeChange(text, index)}
+                                onKeyPress={({ nativeEvent }) => handleBackspace(nativeEvent.key, index)}
+                                keyboardType="number-pad"
+                                maxLength={1}
+                                style={styles.otpInput}
+                                mode="outlined"
+                                textAlign="center"
+                            />
+                        ))}
+                    </View>
                     <Button
                         mode="contained"
                         onPress={confirmCode}
@@ -171,6 +198,20 @@ const styles = StyleSheet.create({
     },
     input: {
         backgroundColor: 'white',
+    },
+    otpContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+    },
+    otpInput: {
+        width: 45,
+        height: 50,
+        backgroundColor: 'white',
+        textAlign: 'center',
+        justifyContent: 'center',
+        // Paper specific hacks for centering text in small inputs might be needed, 
+        // but let's try standard props first.
     },
     button: {
         paddingVertical: 6,
