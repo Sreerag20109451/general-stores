@@ -175,47 +175,47 @@ export default function LoginScreen({ navigation }) {
     );
 }
 
-container: {
-    flex: 1,
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
         padding: 20,
-            justifyContent: 'center',
-                backgroundColor: 'transparent', // Let parent PaperProvider background show, or user theme.colors.background
+        justifyContent: 'center',
+        backgroundColor: 'transparent',
     },
-title: {
-    textAlign: 'center',
+    title: {
+        textAlign: 'center',
         marginBottom: 10,
-            fontWeight: 'bold',
+        fontWeight: 'bold',
     },
-subtitle: {
-    textAlign: 'center',
+    subtitle: {
+        textAlign: 'center',
         marginBottom: 30,
-        // Color handled by style array or default text color usually, but here we can remove hardcode
     },
-row: {
-    flexDirection: 'row',
+    row: {
+        flexDirection: 'row',
         marginBottom: 20,
     },
-input: {
-    backgroundColor: 'white', // Inputs usually white on white bg is fine
+    input: {
+        backgroundColor: 'white',
     },
-otpContainer: {
-    flexDirection: 'row',
+    otpContainer: {
+        flexDirection: 'row',
         justifyContent: 'space-between',
-            marginBottom: 20,
+        marginBottom: 20,
     },
-otpInput: {
-    width: 45,
+    otpInput: {
+        width: 45,
         height: 50,
-            backgroundColor: 'white',
-                textAlign: 'center',
-                    justifyContent: 'center', 
+        backgroundColor: 'white',
+        textAlign: 'center',
+        justifyContent: 'center',
     },
-button: {
-    paddingVertical: 6,
+    button: {
+        paddingVertical: 6,
         marginBottom: 10,
     },
-link: {
-    alignItems: 'center',
+    link: {
+        alignItems: 'center',
         marginTop: 10,
     }
 });
