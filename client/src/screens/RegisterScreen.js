@@ -1,68 +1,19 @@
-import React, { useState, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, TextInput, Dimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Image, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Text, Snackbar } from 'react-native-paper';
-import { PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
-import { auth, db } from '../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
-const { width } = Dimensions.get('window');
-
-export default function VerifyScreen({ navigation, route }) {
-    const { verificationId, phoneNumber, countryCode } = route.params;
-    const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+export default function RegisterScreen({ navigation, route }) {
+    const { phoneNumber, countryCode } = route.params;
+    const [firstName, setFirstName] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const inputRefs = useRef([]);
 
-    const handleCodeChange = (text, index) => {
-        const newCode = [...verificationCode];
-        newCode[index] = text;
-        setVerificationCode(newCode);
-
-        if (text && index < 5) {
-            inputRefs.current[index + 1].focus();
-        }
-    };
-
-    const handleBackspace = (key, index) => {
-        if (key === 'Backspace' && !verificationCode[index] && index > 0) {
-            inputRefs.current[index - 1].focus();
-        }
-    };
-
-    const confirmCode = async () => {
-        const codeString = verificationCode.join('');
-        if (codeString.length !== 6) {
-            setError("Please enter the complete 6-digit code.");
+    const handleContinue = () => {
+        if (!firstName.trim()) {
+            setError("The first name cannot be empty");
             return;
         }
-        setLoading(true);
-        setError('');
-        try {
-            const credential = PhoneAuthProvider.credential(
-                verificationId,
-                codeString
-            );
-            const userCredential = await signInWithCredential(auth, credential);
-            const user = userCredential.user;
-
-            // Check if user exists in Firestore
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-
-            if (userDoc.exists()) {
-                navigation.replace('Home');
-            } else {
-                navigation.replace('Register', {
-                    phoneNumber,
-                    countryCode
-                });
-            }
-        } catch (err) {
-            console.error(err);
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
+        navigation.navigate('Location', { phoneNumber, countryCode, firstName });
     };
 
     return (
@@ -84,38 +35,26 @@ export default function VerifyScreen({ navigation, route }) {
 
                 {/* Main Hero Section */}
                 <View style={styles.heroSection}>
-                    <Text style={styles.heroTitle}>Verify Phone</Text>
-                    <Text style={styles.heroSubtitle}>
-                        Enter the code sent to {countryCode} {phoneNumber}
-                    </Text>
+                    <Text style={styles.heroTitle}>Your Details</Text>
+                    <Text style={styles.heroSubtitle}>Help us know you better</Text>
 
                     <View style={styles.formContainer}>
-                        <View style={styles.otpContainer}>
-                            {verificationCode.map((digit, index) => (
-                                <TextInput
-                                    key={index}
-                                    ref={(ref) => inputRefs.current[index] = ref}
-                                    value={digit}
-                                    onChangeText={(text) => handleCodeChange(text, index)}
-                                    onKeyPress={({ nativeEvent }) => handleBackspace(nativeEvent.key, index)}
-                                    keyboardType="number-pad"
-                                    maxLength={1}
-                                    style={styles.otpInput}
-                                    textAlign="center"
-                                />
-                            ))}
-                        </View>
+                        <TextInput
+                            placeholder="First Name"
+                            placeholderTextColor="#94a3b8"
+                            value={firstName}
+                            onChangeText={setFirstName}
+                            style={styles.input}
+                        />
+
                         <TouchableOpacity
-                            onPress={confirmCode}
+                            onPress={handleContinue}
                             disabled={loading}
                             style={[styles.button, styles.continueButton, loading && styles.buttonDisabled]}
                         >
                             <Text style={styles.buttonText}>
-                                {loading ? "Verifying..." : "Confirm & Login"}
+                                {loading ? "Saving..." : "Continue"}
                             </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.centerLink}>
-                            <Text style={styles.linkText}>Change Phone Number</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -199,6 +138,17 @@ const styles = StyleSheet.create({
     formContainer: {
         width: '100%',
     },
+    input: {
+        backgroundColor: '#f8fafc', // slate-50
+        borderColor: '#e2e8f0', // slate-200
+        borderWidth: 1,
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 18,
+        fontSize: 16,
+        color: '#020617',
+        marginBottom: 20,
+    },
     button: {
         height: 56,
         borderRadius: 14,
@@ -220,32 +170,6 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 16,
         fontWeight: '700',
-    },
-    otpContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 30,
-        width: '100%',
-    },
-    otpInput: {
-        width: (width - 100) / 6,
-        height: 60,
-        backgroundColor: '#f8fafc',
-        borderColor: '#e2e8f0',
-        borderWidth: 1,
-        borderRadius: 12,
-        fontSize: 22,
-        fontWeight: '700',
-        color: '#020617',
-    },
-    centerLink: {
-        marginTop: 20,
-        alignItems: 'center',
-    },
-    linkText: {
-        color: '#64748b',
-        fontSize: 14,
-        fontWeight: '600',
     },
     footer: {
         marginTop: 40,
