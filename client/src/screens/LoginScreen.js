@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
-import { Button, Text, Snackbar } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, Image, TextInput, Dimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Text, Snackbar } from 'react-native-paper';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { useTheme } from 'react-native-paper';
+
+const { width } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -15,7 +16,6 @@ export default function LoginScreen({ navigation }) {
     const [error, setError] = useState('');
     const recaptchaVerifier = useRef(null);
     const inputRefs = useRef([]);
-    const theme = useTheme();
 
     const firebaseConfig = auth.app.options;
 
@@ -24,7 +24,6 @@ export default function LoginScreen({ navigation }) {
         newCode[index] = text;
         setVerificationCode(newCode);
 
-        // Move to next input if text is entered
         if (text && index < 5) {
             inputRefs.current[index + 1].focus();
         }
@@ -37,22 +36,30 @@ export default function LoginScreen({ navigation }) {
     };
 
     const sendVerification = async () => {
-        if (!phoneNumber) {
-            setError("Please enter a phone number.");
+        const trimmedPhone = phoneNumber.trim();
+        if (!trimmedPhone) {
+            setError("The mobile number can not be empty");
             return;
         }
+
+        const fullPhoneNumber = `${countryCode}${trimmedPhone}`;
+
+        // Basic validation matching their logic
+        if (fullPhoneNumber.length < 10) {
+            setError("Please provide a valid mobile number");
+            return;
+        }
+
         setLoading(true);
         setError('');
-        const fullPhoneNumber = `${countryCode}${phoneNumber}`;
 
         try {
             const phoneProvider = new PhoneAuthProvider(auth);
-            const verificationId = await phoneProvider.verifyPhoneNumber(
+            const vId = await phoneProvider.verifyPhoneNumber(
                 fullPhoneNumber,
                 recaptchaVerifier.current
             );
-            setVerificationId(verificationId);
-            setError('');
+            setVerificationId(vId);
         } catch (err) {
             console.error(err);
             setError(err.message);
@@ -85,115 +92,125 @@ export default function LoginScreen({ navigation }) {
     };
 
     return (
-        <View className="flex-1 bg-white p-5 justify-between">
-            {/* Top Bar */}
-            <View className="flex-row items-end justify-between mt-5">
-                <Image
-                    source={require('../../assets/logo.png')}
-                    style={{ width: 120, height: 120, resizeMode: 'contain' }}
-                    className="h-20 w-20"
-                />
-                <TouchableOpacity onPress={() => navigation.replace('Home')} className="mb-8">
-                    <Text className="text-sky-500 font-semibold">Skip</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Main Content */}
-            <View className="w-full flex-col items-center mb-10">
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.container}
+        >
+            <ScrollView contentContainerStyle={styles.scrollContent}>
                 <FirebaseRecaptchaVerifierModal
                     ref={recaptchaVerifier}
                     firebaseConfig={firebaseConfig}
                     attemptInvisibleVerification={true}
                 />
 
-                <Text className="text-4xl font-semibold text-slate-950 text-center">
-                    {verificationId ? "Verify Phone" : "Welcome back"}
-                </Text>
-                <Text className="text-md mt-4 font-light text-slate-400 text-center mb-8">
-                    {verificationId
-                        ? `Enter the code sent to ${countryCode} ${phoneNumber}`
-                        : "Sign in or create an account to continue"
-                    }
-                </Text>
+                {/* Top Bar */}
+                <View style={styles.topBar}>
+                    <Image
+                        source={require('../../assets/logo.png')}
+                        style={styles.logo}
+                    />
+                    <TouchableOpacity onPress={() => navigation.replace('Home')} style={styles.skipButton}>
+                        <Text style={styles.skipText}>Skip</Text>
+                    </TouchableOpacity>
+                </View>
 
-                {!verificationId ? (
-                    <View className="w-full max-w-sm">
-                        <View className="flex-row mb-4">
-                            <TextInput
-                                value={countryCode}
-                                onChangeText={setCountryCode}
-                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 mr-2 w-20 text-slate-900 font-medium"
-                                keyboardType="phone-pad"
-                            />
-                            <TextInput
-                                placeholder="Phone Number"
-                                placeholderTextColor="#94a3b8"
-                                value={phoneNumber}
-                                onChangeText={setPhoneNumber}
-                                keyboardType="phone-pad"
-                                autoComplete="tel"
-                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 flex-1 text-slate-900 font-medium"
-                            />
-                        </View>
-                        <TouchableOpacity
-                            onPress={sendVerification}
-                            disabled={loading}
-                            className={`h-14 w-full rounded-xl items-center justify-center shadow-sm ${loading ? 'bg-sky-300' : 'bg-sky-500'}`}
-                        >
-                            <Text className="text-md font-semibold text-slate-50">
-                                {loading ? "Sending..." : "Continue"}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <View className="w-full max-w-sm">
-                        <View className="flex-row justify-between mb-6">
-                            {verificationCode.map((digit, index) => (
+                {/* Main Hero Section */}
+                <View style={styles.heroSection}>
+                    <Text style={styles.heroTitle}>
+                        {verificationId ? "Verify Phone" : "Welcome back"}
+                    </Text>
+                    <Text style={styles.heroSubtitle}>
+                        {verificationId
+                            ? `Enter the code sent to ${countryCode} ${phoneNumber}`
+                            : "Sign in or create an account to continue"
+                        }
+                    </Text>
+
+                    {!verificationId ? (
+                        <View style={styles.formContainer}>
+                            <View style={styles.inputRow}>
                                 <TextInput
-                                    key={index}
-                                    ref={(ref) => inputRefs.current[index] = ref}
-                                    value={digit}
-                                    onChangeText={(text) => handleCodeChange(text, index)}
-                                    onKeyPress={({ nativeEvent }) => handleBackspace(nativeEvent.key, index)}
-                                    keyboardType="number-pad"
-                                    maxLength={1}
-                                    className="w-12 h-14 bg-slate-50 border border-slate-200 rounded-xl text-center text-xl font-semibold text-slate-900"
-                                    textAlign="center"
+                                    value={countryCode}
+                                    onChangeText={setCountryCode}
+                                    style={[styles.input, styles.countryCodeInput]}
+                                    keyboardType="phone-pad"
                                 />
-                            ))}
+                                <TextInput
+                                    placeholder="Phone Number"
+                                    placeholderTextColor="#94a3b8"
+                                    value={phoneNumber}
+                                    onChangeText={setPhoneNumber}
+                                    keyboardType="phone-pad"
+                                    autoComplete="tel"
+                                    style={[styles.input, styles.phoneInput]}
+                                />
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={sendVerification}
+                                disabled={loading}
+                                style={[styles.button, styles.continueButton, loading && styles.buttonDisabled]}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {loading ? "Sending..." : "Continue"}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.dividerRow}>
+                                <View style={styles.dividerLine} />
+                                <Text style={styles.dividerText}>OR</Text>
+                                <View style={styles.dividerLine} />
+                            </View>
+
+                            <TouchableOpacity
+                                disabled={true} // Google auth not requested yet
+                                style={[styles.button, styles.googleButton]}
+                            >
+                                <Text style={styles.googleButtonText}>Continue with Google</Text>
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity
-                            onPress={confirmCode}
-                            disabled={loading}
-                            className={`h-14 w-full rounded-xl items-center justify-center shadow-sm mb-4 ${loading ? 'bg-sky-300' : 'bg-sky-500'}`}
-                        >
-                            <Text className="text-md font-semibold text-slate-50">
-                                {loading ? "Verifying..." : "Confirm & Login"}
-                            </Text>
-                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.formContainer}>
+                            <View style={styles.otpContainer}>
+                                {verificationCode.map((digit, index) => (
+                                    <TextInput
+                                        key={index}
+                                        ref={(ref) => inputRefs.current[index] = ref}
+                                        value={digit}
+                                        onChangeText={(text) => handleCodeChange(text, index)}
+                                        onKeyPress={({ nativeEvent }) => handleBackspace(nativeEvent.key, index)}
+                                        keyboardType="number-pad"
+                                        maxLength={1}
+                                        style={styles.otpInput}
+                                        textAlign="center"
+                                    />
+                                ))}
+                            </View>
+                            <TouchableOpacity
+                                onPress={confirmCode}
+                                disabled={loading}
+                                style={[styles.button, styles.continueButton, loading && styles.buttonDisabled]}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {loading ? "Verifying..." : "Confirm & Login"}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setVerificationId(null)} style={styles.centerLink}>
+                                <Text style={styles.linkText}>Change Phone Number</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
 
-                        <TouchableOpacity onPress={() => setVerificationId(null)} className="items-center">
-                            <Text className="text-slate-500 font-medium">Change Phone Number</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* Error Snackbar via simple Text for now to match design or keep logic */}
-                {/* Keeping logic but styling it naturally if possible, or using Paper's Snackbar as before but styled? 
-                    Let's use a conditional Text for error to fit the custom design better than a floating snackbar if desired, 
-                    but sticking to the existing Snackbar component for functionality is safer. 
-                    I'll keep the Snackbar but wrapper needs to be right.
-                */}
-            </View>
-
-            {/* Footer */}
-            <View className="mb-5">
-                <Text className="text-md text-center font-light text-slate-600">
-                    By continuing, you agree to our{' '}
-                    <Text className="font-semibold text-slate-900">Terms of Services</Text> and{' '}
-                    <Text className="font-semibold text-slate-900">Privacy Policies</Text>
-                </Text>
-            </View>
+                {/* Footer Section */}
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>
+                        By continuing, you agree to our{' '}
+                        <Text style={styles.footerLinkBold}>Terms of Services</Text> and{' '}
+                        <Text style={styles.footerLinkBold}>Privacy Policies</Text>
+                    </Text>
+                </View>
+            </ScrollView>
 
             <Snackbar
                 visible={!!error}
@@ -203,13 +220,177 @@ export default function LoginScreen({ navigation }) {
                     onPress: () => setError(''),
                     textColor: 'white'
                 }}
-                className="bg-red-500 mb-20"
+                style={styles.snackbar}
             >
                 {error}
             </Snackbar>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
-// Removing StyleSheet since we use NativeWind
-const styles = {};
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 25,
+        justifyContent: 'space-between',
+        paddingBottom: 40,
+    },
+    topBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: Platform.OS === 'ios' ? 60 : 40,
+        width: '100%',
+    },
+    logo: {
+        width: 140,
+        height: 60,
+        resizeMode: 'contain',
+    },
+    skipButton: {
+        paddingVertical: 10,
+    },
+    skipText: {
+        color: '#0ea5e9', // sky-500
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    heroSection: {
+        alignItems: 'center',
+        marginTop: 40,
+        width: '100%',
+    },
+    heroTitle: {
+        fontSize: 34,
+        fontWeight: '700',
+        color: '#020617', // slate-950
+        textAlign: 'center',
+    },
+    heroSubtitle: {
+        fontSize: 16,
+        color: '#94a3b8', // slate-400
+        textAlign: 'center',
+        marginTop: 10,
+        marginBottom: 35,
+        fontWeight: '400',
+    },
+    formContainer: {
+        width: '100%',
+    },
+    inputRow: {
+        flexDirection: 'row',
+        marginBottom: 20,
+    },
+    input: {
+        backgroundColor: '#f8fafc', // slate-50
+        borderColor: '#e2e8f0', // slate-200
+        borderWidth: 1,
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 18,
+        fontSize: 16,
+        color: '#020617',
+    },
+    countryCodeInput: {
+        width: 85,
+        marginRight: 10,
+    },
+    phoneInput: {
+        flex: 1,
+    },
+    button: {
+        height: 56,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#64748b',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    continueButton: {
+        backgroundColor: '#0ea5e9', // sky-500
+    },
+    buttonDisabled: {
+        backgroundColor: '#94a3b8',
+    },
+    buttonText: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 25,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#e2e8f0',
+    },
+    dividerText: {
+        marginHorizontal: 15,
+        color: '#94a3b8',
+        fontWeight: '600',
+    },
+    googleButton: {
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        shadowOpacity: 0.05,
+    },
+    googleButtonText: {
+        color: '#020617',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    otpContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 30,
+        width: '100%',
+    },
+    otpInput: {
+        width: (width - 100) / 6,
+        height: 60,
+        backgroundColor: '#f8fafc',
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        borderRadius: 12,
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#020617',
+    },
+    centerLink: {
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    linkText: {
+        color: '#64748b',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    footer: {
+        marginTop: 40,
+        alignItems: 'center',
+    },
+    footerText: {
+        fontSize: 14,
+        color: '#64748b', // slate-600
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    footerLinkBold: {
+        color: '#020617',
+        fontWeight: '700',
+    },
+    snackbar: {
+        backgroundColor: '#ef4444',
+    }
+});
