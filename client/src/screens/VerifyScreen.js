@@ -1,50 +1,49 @@
 import React, { useState, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, TextInput, Dimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Text, Snackbar } from 'react-native-paper';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
 const { width } = Dimensions.get('window');
 
-export default function LoginScreen({ navigation }) {
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [countryCode, setCountryCode] = useState('+353');
+export default function VerifyScreen({ navigation, route }) {
+    const { verificationId, phoneNumber, countryCode } = route.params;
+    const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const recaptchaVerifier = useRef(null);
+    const inputRefs = useRef([]);
 
-    const firebaseConfig = auth.app.options;
+    const handleCodeChange = (text, index) => {
+        const newCode = [...verificationCode];
+        newCode[index] = text;
+        setVerificationCode(newCode);
 
-    const sendVerification = async () => {
-        const trimmedPhone = phoneNumber.trim();
-        if (!trimmedPhone) {
-            setError("The mobile number can not be empty");
+        if (text && index < 5) {
+            inputRefs.current[index + 1].focus();
+        }
+    };
+
+    const handleBackspace = (key, index) => {
+        if (key === 'Backspace' && !verificationCode[index] && index > 0) {
+            inputRefs.current[index - 1].focus();
+        }
+    };
+
+    const confirmCode = async () => {
+        const codeString = verificationCode.join('');
+        if (codeString.length !== 6) {
+            setError("Please enter the complete 6-digit code.");
             return;
         }
-
-        const fullPhoneNumber = `${countryCode}${trimmedPhone}`;
-
-        // Basic validation matching their logic
-        if (fullPhoneNumber.length < 10) {
-            setError("Please provide a valid mobile number");
-            return;
-        }
-
         setLoading(true);
         setError('');
-
         try {
-            const phoneProvider = new PhoneAuthProvider(auth);
-            const vId = await phoneProvider.verifyPhoneNumber(
-                fullPhoneNumber,
-                recaptchaVerifier.current
+            const credential = PhoneAuthProvider.credential(
+                verificationId,
+                codeString
             );
-            navigation.navigate('Verify', {
-                verificationId: vId,
-                phoneNumber: trimmedPhone,
-                countryCode
-            });
+            await signInWithCredential(auth, credential);
+            navigation.replace('Home');
         } catch (err) {
             console.error(err);
             setError(err.message);
@@ -59,12 +58,6 @@ export default function LoginScreen({ navigation }) {
             style={styles.container}
         >
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <FirebaseRecaptchaVerifierModal
-                    ref={recaptchaVerifier}
-                    firebaseConfig={firebaseConfig}
-                    attemptInvisibleVerification={true}
-                />
-
                 {/* Top Bar */}
                 <View style={styles.topBar}>
                     <Image
@@ -78,49 +71,38 @@ export default function LoginScreen({ navigation }) {
 
                 {/* Main Hero Section */}
                 <View style={styles.heroSection}>
-                    <Text style={styles.heroTitle}>Welcome back</Text>
-                    <Text style={styles.heroSubtitle}>Sign in or create an account to continue</Text>
+                    <Text style={styles.heroTitle}>Verify Phone</Text>
+                    <Text style={styles.heroSubtitle}>
+                        Enter the code sent to {countryCode} {phoneNumber}
+                    </Text>
 
                     <View style={styles.formContainer}>
-                        <View style={styles.inputRow}>
-                            <TextInput
-                                value={countryCode}
-                                onChangeText={setCountryCode}
-                                style={[styles.input, styles.countryCodeInput]}
-                                keyboardType="phone-pad"
-                            />
-                            <TextInput
-                                placeholder="Phone Number"
-                                placeholderTextColor="#94a3b8"
-                                value={phoneNumber}
-                                onChangeText={setPhoneNumber}
-                                keyboardType="phone-pad"
-                                autoComplete="tel"
-                                style={[styles.input, styles.phoneInput]}
-                            />
+                        <View style={styles.otpContainer}>
+                            {verificationCode.map((digit, index) => (
+                                <TextInput
+                                    key={index}
+                                    ref={(ref) => inputRefs.current[index] = ref}
+                                    value={digit}
+                                    onChangeText={(text) => handleCodeChange(text, index)}
+                                    onKeyPress={({ nativeEvent }) => handleBackspace(nativeEvent.key, index)}
+                                    keyboardType="number-pad"
+                                    maxLength={1}
+                                    style={styles.otpInput}
+                                    textAlign="center"
+                                />
+                            ))}
                         </View>
-
                         <TouchableOpacity
-                            onPress={sendVerification}
+                            onPress={confirmCode}
                             disabled={loading}
                             style={[styles.button, styles.continueButton, loading && styles.buttonDisabled]}
                         >
                             <Text style={styles.buttonText}>
-                                {loading ? "Sending..." : "Continue"}
+                                {loading ? "Verifying..." : "Confirm & Login"}
                             </Text>
                         </TouchableOpacity>
-
-                        <View style={styles.dividerRow}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>OR</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
-
-                        <TouchableOpacity
-                            disabled={true} // Google auth not requested yet
-                            style={[styles.button, styles.googleButton]}
-                        >
-                            <Text style={styles.googleButtonText}>Continue with Google</Text>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.centerLink}>
+                            <Text style={styles.linkText}>Change Phone Number</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -204,27 +186,6 @@ const styles = StyleSheet.create({
     formContainer: {
         width: '100%',
     },
-    inputRow: {
-        flexDirection: 'row',
-        marginBottom: 20,
-    },
-    input: {
-        backgroundColor: '#f8fafc', // slate-50
-        borderColor: '#e2e8f0', // slate-200
-        borderWidth: 1,
-        borderRadius: 14,
-        paddingHorizontal: 16,
-        paddingVertical: 18,
-        fontSize: 16,
-        color: '#020617',
-    },
-    countryCodeInput: {
-        width: 85,
-        marginRight: 10,
-    },
-    phoneInput: {
-        flex: 1,
-    },
     button: {
         height: 56,
         borderRadius: 14,
@@ -246,32 +207,6 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 16,
         fontWeight: '700',
-    },
-    dividerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 25,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#e2e8f0',
-    },
-    dividerText: {
-        marginHorizontal: 15,
-        color: '#94a3b8',
-        fontWeight: '600',
-    },
-    googleButton: {
-        backgroundColor: '#ffffff',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-        shadowOpacity: 0.05,
-    },
-    googleButtonText: {
-        color: '#020617',
-        fontSize: 16,
-        fontWeight: '600',
     },
     otpContainer: {
         flexDirection: 'row',
